@@ -17,84 +17,34 @@ struct PanNode {
 
 vector<string>              scaleNames;
 map<string, PanNode>        scaleNamesToNodes;
-map<string, int>            calculatedMasses; // Memoisation for calculated masses.
-map<string, pair<int, int>> imbalanceFixes;   // Stores the solution to the problem 
-// (i.e. additional weights needed for balancing).
+map<string, int>            calculatedMasses;
+map<string, pair<int, int>> imbalanceFixes;
 
-/**
- * @brief Determines if a given string represents a numeric mass.
- *
- * @param val String input to check.
- * @return true if val is a positive integer mass.
- * @return false otherwise (i.e. a scale name).
- */
 bool isMassInt(const string& item) {
     return all_of(item.begin(), item.end(), ::isdigit);
 }
 
-/**
- * @brief Recursively computes the total mass of a given item.
- * Uses memoization to avoid repeated computation.
- *
- * @param item Mass or scale name.
- * @return int Total mass of the item.
- */
 int calculateTotalMass(const string& item) {
-
-    if (isMassInt(item))
-    {
+    if (isMassInt(item)) {
         return stoi(item);
     }
-
-    if (calculatedMasses.count(item))
-    {
+    if (calculatedMasses.count(item)) {
         return calculatedMasses[item];
     }
-
     auto& currentNode = scaleNamesToNodes[item];
     int totalMass = 1 + calculateTotalMass(currentNode.left) + calculateTotalMass(currentNode.right);
-
     calculatedMasses[item] = totalMass;
     return totalMass;
 }
 
-
-/**
- * @brief Recursively evaluates the balancing requirements for a given item
- * and stores the results in the imbalanceFixes map.
- *
- * @param item Mass or scale name.
- */
 void measureImbalances(const string& item) {
     if (isMassInt(item)) {
         return;
     }
-
     auto& currentNode = scaleNamesToNodes[item];
-    int leftMass = 0;
-    int rightMass = 0;
+    int leftMass = isMassInt(currentNode.left) ? stoi(currentNode.left) : calculatedMasses[currentNode.left];
+    int rightMass = isMassInt(currentNode.right) ? stoi(currentNode.right) : calculatedMasses[currentNode.right];
 
-    // Retrieve the (recursively calculated) masses of the left pan
-    if (isMassInt(currentNode.left))
-    {
-        leftMass = stoi(currentNode.left);
-    }
-    else
-    {
-        leftMass = calculatedMasses[currentNode.left];
-    }
-
-    // Retrieve the (recursively calculated) masses of the right pan
-    if (isMassInt(currentNode.right))
-    {
-        rightMass = stoi(currentNode.right);
-    }
-    else
-    {
-        rightMass = calculatedMasses[currentNode.right];
-    }
-
-    // Measure imbalances
     int leftAdditionalWeight = 0;
     int rightAdditionalWeight = 0;
 
@@ -112,15 +62,14 @@ void measureImbalances(const string& item) {
 }
 
 int main() {
-    std::ifstream input("input\\input.txt");
+    ifstream input("input/input.txt");
     if (!input) {
-        std::cerr << "Error: Could not open file!" << std::endl;
+        cerr << "Error: Could not open file!" << endl;
         return 1;
     }
-    std::cin.rdbuf(input.rdbuf());
+    cin.rdbuf(input.rdbuf());
 
     string line;
-
     while (getline(cin, line)) {
         if (line.empty() || line[0] == '#') continue;
 
@@ -143,16 +92,11 @@ int main() {
     for (const string& name : scaleNames) {
         calculateTotalMass(name);
     }
-
     for (const string& name : scaleNames) {
         measureImbalances(name);
     }
-
     for (const string& name : scaleNames) {
-        int leftImbalanceCorrection = imbalanceFixes[name].first;
-        int rightImbalanceCorrection = imbalanceFixes[name].second;
-        cout << name << "," << leftImbalanceCorrection << "," << rightImbalanceCorrection << endl;
+        cout << name << "," << imbalanceFixes[name].first << "," << imbalanceFixes[name].second << endl;
     }
-
     return 0;
 }
